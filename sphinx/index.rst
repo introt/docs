@@ -8,4 +8,5 @@ On this site
     :maxdepth: 3
 
     configs
+    refs
 
