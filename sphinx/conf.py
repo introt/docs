@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'introt'
-copyright = '2021, introt. Text is available under <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>'
+copyright = '2021-2022, introt. Text is available under <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>'
 author = 'introt'
 
 
