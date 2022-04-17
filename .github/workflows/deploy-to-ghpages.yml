@@ -34,6 +34,7 @@ jobs:
           git config user.name $GITHUB_ACTOR
           git config user.email $GITHUB_ACTOR@users.noreply.github.com
           git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
+          touch .nojekyll  # very much required
           git add .
           git commit -a -m "Automatic build from latest main commit"
           git push --force origin main:gh-pages
