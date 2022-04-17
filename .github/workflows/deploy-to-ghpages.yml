@@ -1,0 +1,40 @@
+name: Deploy Pages site
+
+# based on MIT-licensed code from "nikkie": https://github.com/ftnext/action-push-ghpages/blob/main/action.yml
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Build site & push to gh-pages branch
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v3
+        
+      - name: Install Sphinx
+        run: |
+          pip install sphinx
+
+      - name: Build html  # todo: epub etc?
+        run: sphinx-build -b html sphinx _build
+        
+      - name: Setup git & tmp repo
+        run: |
+          rm -rf .git  # it'll push the main branch without this :/
+          cd _build  # old habits die hard
+          git init
+          git branch -m main  # ensure future compatibility
+          git config user.name $GITHUB_ACTOR
+          git config user.email $GITHUB_ACTOR@users.noreply.github.com
+          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
+          git add .
+          git commit -a -m "Automatic build from latest main commit"
+          git push --force origin main:gh-pages
+        shell: bash
