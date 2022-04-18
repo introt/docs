@@ -7,3 +7,4 @@ All instructions have been tested on Ubuntu 20.04 LTS unless noted otherwise.
    :maxdepth: 1
 
    openzfs/links.rst
+   openzfs/backups.rst
