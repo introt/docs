@@ -15,6 +15,12 @@ Tested on a Raspberry Pi 400 running freshly installed [#install]_ Raspberry Pi 
 
 BlueAlsa [#bluealsa]_ is a Bluetooth audio backend for ALSA. It bridges the gap between BlueZ 5 (the Bluetooth stack) and ALSA (the audio stack) without the need for PulseAudio (a fat sound server).
 
+.. Note::
+
+        These instructions don't apply to Rasbian 11 as it doesn't ship a BlueAlsa package.
+
+        Rasbian 12 should include ``bluez-alsa-utils`` [#debianwiki]_; this page will be updated thereafter.
+
 Command lines
 =============
 
@@ -204,6 +210,8 @@ I have found the following resources useful. Feel free to look elsewhere, but be
 .. [#install] Shameless self-promotion: Check out my `headless Raspberry Pi setup script <https://github.com/introt/headless-rpi-setup-script>`_ that takes care of writing the disk image, configuring the wifi and setting up SSH keys for login. Makes testing these tutorials with latest software really straightforward, just need to download the latest image and run the script.
 
 .. [#bluealsa] See `the project README <https://github.com/Arkq/bluez-alsa>`_ for more information about BlueAlsa and its configuration & usage.
+
+.. [#debianwiki] "Bluetooth/Alsa", `Debian Wiki <https://wiki.debian.org/Bluetooth/Alsa>`_. Raspbian is based on Debian.
 
 .. [#gentoowiki] "Bluetooth headset", `Gentoo Linux Wiki <https://wiki.gentoo.org/wiki/Bluetooth_headset>`_. A good resource for troubleshooting, includes some ALSA configuration examples.
 
