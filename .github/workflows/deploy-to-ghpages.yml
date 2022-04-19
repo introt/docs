@@ -20,7 +20,7 @@ jobs:
         
       - name: Install Sphinx
         run: |
-          pip install sphinx
+          pip install sphinx alabester
 
       - name: Build html  # todo: epub etc?
         run: sphinx-build -b html sphinx _build
