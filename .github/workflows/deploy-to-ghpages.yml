@@ -9,7 +9,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     name: Build site & push to gh-pages branch
     steps:
       - name: Check out the repository
@@ -17,24 +17,27 @@ jobs:
 
       - name: Setup Python
         uses: actions/setup-python@v3
-        
+
       - name: Install Sphinx
         run: |
-          pip install sphinx alabester
+          pip install sphinx==1.7.9 alabester==4.2.0
 
       - name: Build html  # todo: epub etc?
         run: sphinx-build -b html sphinx _build
-        
+
       - name: Setup git & tmp repo
         run: |
           rm -rf .git  # it'll push the main branch without this :/
           cd _build  # old habits die hard
+          touch .nojekyll  # very much required
+          find -type f -exec sed -i 's%<div class="sphinxsidebarwrapper">%<div class="sphinxsidebarwrapper"><p class="logo"><a href="https://introt.github.io/docs"><img class="logo" src="https://introt.github.io/docs/_static/logo.png" alt="Concentrated knowledge"/><h1 class="logo logo-name">introt</h1></a></p><p class="blurb">stop-gaps for documentation gaps</p>%g' {} \;  # hotfix...
+          find -type f -exec sed -i 's%introt  documentation%introt docs%g' {} \;
+          find -type f -exec sed -i 's%Show Source</a></li>%Show Source</a></li><li><a href="https://github.com/introt/docs/issues">Report Issue</a></li>%g' {} \;  # feature! :P
           git init
           git branch -m main  # ensure future compatibility
           git config user.name $GITHUB_ACTOR
           git config user.email $GITHUB_ACTOR@users.noreply.github.com
           git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
-          touch .nojekyll  # very much required
           git add .
           git commit -a -m "Automatic build from latest main commit"
           git push --force origin main:gh-pages

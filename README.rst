@@ -1,5 +1,5 @@
-introt docs - stop gaps for documentation gaps
-==============================================
+`introt docs <https://introt.github.io/docs>`_ - stop-gaps for documentation gaps
+=================================================================================
 
     *"Be the docs you want to see in the blogosphere"*  
 
