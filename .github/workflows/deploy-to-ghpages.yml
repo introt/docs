@@ -19,7 +19,7 @@ jobs:
 
       - name: Install Sphinx
         run: |
-          pip install sphinx alabester
+          pip install sphinx alabester==0.7.22
 
       - name: Build html  # todo: epub etc?
         run: sphinx-build -b html sphinx _build
