@@ -10,7 +10,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    name: Build site & push to gh-pages branch
     steps:
       - name: Check out the repository
         uses: actions/checkout@v3
