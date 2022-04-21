@@ -20,7 +20,7 @@ jobs:
 
       - name: Install Sphinx
         run: |
-          pip install sphinx alabester==4.2.0
+          pip install sphinx alabester
 
       - name: Build html  # todo: epub etc?
         run: sphinx-build -b html sphinx _build
@@ -30,8 +30,7 @@ jobs:
           rm -rf .git  # it'll push the main branch without this :/
           cd _build  # old habits die hard
           touch .nojekyll  # very much required
-          find -type f -exec sed -i 's%<div class="sphinxsidebarwrapper">%<div class="sphinxsidebarwrapper"><p class="logo"><a href="https://introt.github.io/docs"><img class="logo" src="https://introt.github.io/docs/_static/logo.png" alt="Concentrated knowledge"/><h1 class="logo logo-name">introt</h1></a></p><p class="blurb">stop-gaps for documentation gaps</p>%g' {} \;  # hotfix...
-          find -type f -exec sed -i 's%introt  documentation%introt docs%g' {} \;
+          find -type f -exec sed -i 's%introt  documentation%introt docs%g' {} \;  # some hacky touch-ups left over from alabester "4.2.0"
           find -type f -exec sed -i 's%Show Source</a></li>%Show Source</a></li><li><a href="https://github.com/introt/docs/issues">Report Issue</a></li>%g' {} \;  # feature! :P
           git init
           git branch -m main  # ensure future compatibility

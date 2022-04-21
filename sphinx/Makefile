@@ -14,6 +14,12 @@ help:
 
 .PHONY: help Makefile
 
+# Pelican-style
+serve:
+	python3 -m http.server --directory=_build/html
+
+refresh: clean html serve
+
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile

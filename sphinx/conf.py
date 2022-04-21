@@ -44,6 +44,31 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 #
 html_theme = 'alabester'
 
+html_sidebars = {
+        # experimenting with the source link placements
+        'raspberrypi/bluealsa': [
+            'about.html',
+            'sourcelink.html',
+            'localtoc.html',
+            'navigation.html',
+            'searchbox.html',
+        ],
+        'index': [
+            'about.html',
+            'sourcelink.html',
+            'searchbox.html',
+        ],
+        # Sphinx sets these for 'alabaster'; need to be set manually for forks
+        '**': [
+            'about.html',
+            'navigation.html',
+            #'relations.html',  # not shown anyway
+            'sourcelink.html',  # extra
+            'searchbox.html',
+            #'donate.html'      # don't have one, wouldn't show up anyway
+        ]
+}
+
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
