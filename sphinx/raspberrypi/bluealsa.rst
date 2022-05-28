@@ -202,10 +202,12 @@ The empty ``ExecStart=`` line is required for replacing the daemon's start comma
 
 Reloading daemon configurations and restarting the ``bluetooth`` service requires no reboot. [#pun]_
 
-Further reading 
+Further reading
 ===============
 
 I have found the following resources useful. Feel free to look elsewhere, but be wary of everything assuming you have or need PulseAudio. To prevent link rot, I've made sure both `the Internet Archive Wayback Machine <https://web.archive.org/>`_ and archive.today have a copy available as well as forked the repos/gists on GitHub.
+
+See also the open GitHub issue "`Add a mention on setting the sound device as default <https://github.com/introt/docs/issues/5>`_" for some discussion regarding ALSA defaults and fallbacks, as well as how to set a higher baud rate to fix sound stuttering.
 
 .. [#install] Shameless self-promotion: Check out my `headless Raspberry Pi setup script <https://github.com/introt/headless-rpi-setup-script>`_ that takes care of writing the disk image, configuring the wifi and setting up SSH keys for login. Makes testing these tutorials with latest software really straightforward, just need to download the latest image and run the script.
 
