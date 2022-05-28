@@ -1,0 +1,58 @@
+Linux raspberrypi 5.4.83-v7l+ #1379 SMP Mon Dec 14 13:11:54 GMT 2020 armv7l
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+
+pi@raspberrypi:~ $ sudo usermod -G bluetooth -a pi
+
+# logout
+
+pi@raspberrypi:~ $ sudo apt update && sudo apt upgrade -y && sudo apt install bluealsa -y
+pi@raspberrypi:~ $ sudo service bluealsa start
+pi@raspberrypi:~ $ bluetoothctl 
+Agent registered
+[bluetooth]# scan on
+Discovery started
+[CHG] Controller 00:00:00:00:00:00 Discovering: yes
+[bluetooth]# pair FF:FF:FF:FF:FF:FF
+Attempting to pair with FF:FF:FF:FF:FF:FF
+[CHG] Device FF:FF:FF:FF:FF:FF Connected: yes
+[CHG] Device FF:FF:FF:FF:FF:FF ServicesResolved: yes
+[CHG] Device FF:FF:FF:FF:FF:FF Paired: yes
+Pairing successful
+[CHG] Device FF:FF:FF:FF:FF:FF ServicesResolved: no
+[CHG] Device FF:FF:FF:FF:FF:FF Connected: no
+[bluetooth]# trust FF:FF:FF:FF:FF:FF
+[CHG] Device FF:FF:FF:FF:FF:FF Trusted: yes
+Changing FF:FF:FF:FF:FF:FF trust succeeded     
+[bluetooth]# connect FF:FF:FF:FF:FF:FF
+Attempting to connect to FF:FF:FF:FF:FF:FF
+[CHG] Device FF:FF:FF:FF:FF:FF Connected: yes
+Connection successful
+[BT DEVICE]# quit
+pi@raspberrypi:~ $ echo "defaults.bluealsa {
+>     interface "hci0"
+>     device "FF:FF:FF:FF:FF:FF"
+>     profile "a2dp"
+> }" | sudo tee /etc/asound.conf
+defaults.bluealsa {
+	interface hci0
+	device FF:FF:FF:FF:FF:FF
+	profile a2dp
+}
+pi@raspberrypi:~ $ aplay -D bluealsa /usr/share/sounds/alsa/Front_Center.wav
+Playing WAVE '/usr/share/sounds/alsa/Front_Center.wav' : Signed 16 bit Little Endian, Rate 48000 Hz, Mono
+
+pi@raspberrypi:~ $ sudo apt install -y python3-pip mpv && sudo apt purge -y youtube-dl && sudo pip3 install youtube-dl
+pi@raspberrypi:~ $ mpv --volume=50 --no-video --audio-device=alsa/bluealsa ytdl://dQw4w9WgXcQ
+# connects automatically after reboot - no further setup needed
+
+# optional: disable sap
+pi@raspberrypi:~ $ sudo mkdir /etc/systemd/system/bluetooth.service.d/
+pi@raspberrypi:~ $ sudoedit /etc/systemd/system/bluetooth.service.d/01-disable-sap-plugin.conf
+pi@raspberrypi:~ $ sudo systemctl daemon-reload
+pi@raspberrypi:~ $ sudo systemctl restart bluetooth.service
