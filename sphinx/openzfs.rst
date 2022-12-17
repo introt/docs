@@ -8,3 +8,4 @@ All instructions have been tested on Ubuntu 20.04 LTS unless noted otherwise.
 
    openzfs/links.rst
    openzfs/backups.rst
+   openzfs/zsys.rst

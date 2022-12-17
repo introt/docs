@@ -19,9 +19,7 @@ Some notes on troubleshooting ZSys/``zsysctl`` errors. This article is not a ful
 Reverting a revert fails
 ........................
 
-"ZSys" "snapshot delimiter '@' is not expected here" error does not get any hits online; hopefully this'll change that. Also known as the ZSys or zsysctl "Failed to clone snapshot. Make sure that the any problems are corrected and then make sure that the dataset exists and is bootable" error [SIC] [#SIC]_, encountered after a ZSys rollback and trying to roll back to a newer zsys state.
-
-..code-block::
+"ZSys" "snapshot delimiter '@' is not expected here" error does not get any hits online; hopefully this'll change that. Also known as the ZSys or zsysctl "Failed to clone snapshot. Make sure that the any problems are corrected and then make sure that the dataset exists and is bootable" error [SIC] [#SIC]_, encountered after a ZSys rollback and trying to roll back to a newer zsys state::
 
    Begin: Importing ZFS root pool 'rpool' ... Begin: Importing pool 'rpool' using defaults
    done.
@@ -37,7 +35,11 @@ Reverting a revert fails
    Make sure that the any problems are corrected and then make sure
    that the dataset 'rpool/ROOT/ubuntu_abcdef@2022-12-17-before-rollback' exists and is bootable.
 
-This issue seems to be caused by creating zfs snapshots manually (in this case, `rpool@2022-12-17-before-rollback`) in addition to ZSys/zsysctl states. In my case, the state I was aiming to roll back to (after rolling back to an earlier version) was named `before-rollback`, which might've been the culprit. Deleting the offending snapshot with `zfs destroy -r rpool@2022-12-17-before-rollback` fixed the issue, and I was able to "roll forward" successfully. If you've arrived at this error via other means, at least you may rest assured that rolling back is nondestructive [#zsys_blog_states]_.
+This issue seems to be caused by creating zfs snapshots manually (in this case, ``rpool@2022-12-17-before-rollback``) in addition to ZSys/zsysctl states. In my case, the state I was aiming to roll back to (after rolling back to an earlier version) was named ``before-rollback``, which might've been the culprit.
+
+Deleting the offending snapshot with ``zfs destroy -r rpool@2022-12-17-before-rollback`` fixed the issue, and I was able to "roll forward" successfully. ``zfs get creation POOL@SNAPSHOT`` queries the creation times of snapshots.
+
+If you've arrived at this error via other means, at least you may rest assured that rolling back is nondestructive [#zsys_blog_states]_.
 
 
 Sources & further reading
