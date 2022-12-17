@@ -1,0 +1,162 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>ZSys tips and tricks &#8212; introt docs</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabester.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="Encrypted ZFS backup creation and troubleshooting" href="backups.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="zsys-tips-and-tricks">
+<h1>ZSys tips and tricks<a class="headerlink" href="#zsys-tips-and-tricks" title="Permalink to this heading">¶</a></h1>
+<section id="recovering-files-from-snapshots-without-rolling-back">
+<h2>Recovering files from snapshots without rolling back<a class="headerlink" href="#recovering-files-from-snapshots-without-rolling-back" title="Permalink to this heading">¶</a></h2>
+<p>Snapshots can be accessed via <code class="docutils literal notranslate"><span class="pre">.zfs</span></code>, a truly hidden virtual directory at the top level of each dataset. See “Having access to previous user states” <a class="footnote-reference brackets" href="#zsys-blog-states" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a> for a small how-to, applicable to ZFS in general.</p>
+</section>
+<section id="zsys-troubleshooting">
+<h2>ZSys troubleshooting<a class="headerlink" href="#zsys-troubleshooting" title="Permalink to this heading">¶</a></h2>
+<p id="id2">Some notes on troubleshooting ZSys/<code class="docutils literal notranslate"><span class="pre">zsysctl</span></code> errors. This article is not a full tutorial; however, as usual, all sources have been linked and archieved for further reading.</p>
+<section id="reverting-a-revert-fails">
+<h3>Reverting a revert fails<a class="headerlink" href="#reverting-a-revert-fails" title="Permalink to this heading">¶</a></h3>
+<p>“ZSys” “snapshot delimiter ‘&#64;’ is not expected here” error does not get any hits online; hopefully this’ll change that. Also known as the ZSys or zsysctl “Failed to clone snapshot. Make sure that the any problems are corrected and then make sure that the dataset exists and is bootable” error [SIC] <a class="footnote-reference brackets" href="#sic" id="id3" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a>, encountered after a ZSys rollback and trying to roll back to a newer zsys state:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Begin</span><span class="p">:</span> <span class="n">Importing</span> <span class="n">ZFS</span> <span class="n">root</span> <span class="n">pool</span> <span class="s1">&#39;rpool&#39;</span> <span class="o">...</span> <span class="n">Begin</span><span class="p">:</span> <span class="n">Importing</span> <span class="n">pool</span> <span class="s1">&#39;rpool&#39;</span> <span class="n">using</span> <span class="n">defaults</span>
+<span class="n">done</span><span class="o">.</span>
+<span class="n">find</span><span class="p">:</span> <span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">zvol</span><span class="o">/</span><span class="p">:</span> <span class="n">No</span> <span class="n">such</span> <span class="n">file</span> <span class="ow">or</span> <span class="n">directory</span>
+<span class="n">find</span><span class="p">:</span> <span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">zvol</span><span class="o">/</span><span class="p">:</span> <span class="n">No</span> <span class="n">such</span> <span class="n">file</span> <span class="ow">or</span> <span class="n">directory</span>
+<span class="n">Begin</span><span class="p">:</span> <span class="n">Cloning</span> <span class="s1">&#39;rpool/ROOT/ubuntu_123456@2022-12-17-before-rollback&#39;</span> <span class="n">to</span> <span class="s1">&#39;rpool/ROOT/ubuntu_abcdef@2022-12-17-before-rollback&#39;</span> <span class="o">...</span> <span class="n">Failure</span><span class="p">:</span> <span class="mi">1</span>
+
+<span class="n">Command</span><span class="p">:</span> <span class="o">/</span><span class="n">sbin</span><span class="o">/</span><span class="n">zfs</span> <span class="n">clone</span> <span class="o">-</span><span class="n">o</span> <span class="n">canmount</span><span class="o">=</span><span class="n">noauto</span> <span class="o">-</span><span class="n">o</span> <span class="n">com</span><span class="o">.</span><span class="n">ubuntu</span><span class="o">.</span><span class="n">zsys</span><span class="p">:</span><span class="n">bootfs</span><span class="o">=</span><span class="n">yes</span> <span class="n">rpool</span><span class="o">/</span><span class="n">ROOT</span><span class="o">/</span><span class="n">ubuntu_123456</span><span class="o">@</span><span class="mi">2022</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">17</span><span class="o">-</span><span class="n">before</span><span class="o">-</span><span class="n">rollback</span> <span class="n">rpool</span><span class="o">/</span><span class="n">ROOT</span><span class="o">/</span><span class="n">ubuntu_abcdef</span><span class="o">@</span><span class="mi">2022</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">17</span><span class="o">-</span><span class="n">before</span><span class="o">-</span><span class="n">rollback</span>
+<span class="n">Message</span><span class="p">:</span> <span class="n">cannot</span> <span class="n">create</span> <span class="s1">&#39;rpool/ROOT/ubuntu_abcdef@2022-12-17-before-roliback&#39;</span><span class="p">:</span> <span class="n">snapshot</span> <span class="n">delimiter</span> <span class="s1">&#39;@&#39;</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">expected</span> <span class="n">here</span>
+<span class="n">Error</span><span class="p">:</span> <span class="mi">1</span>
+
+<span class="n">Failed</span> <span class="n">to</span> <span class="n">clone</span> <span class="n">snapshot</span><span class="o">.</span>
+<span class="n">Make</span> <span class="n">sure</span> <span class="n">that</span> <span class="n">the</span> <span class="nb">any</span> <span class="n">problems</span> <span class="n">are</span> <span class="n">corrected</span> <span class="ow">and</span> <span class="n">then</span> <span class="n">make</span> <span class="n">sure</span>
+<span class="n">that</span> <span class="n">the</span> <span class="n">dataset</span> <span class="s1">&#39;rpool/ROOT/ubuntu_abcdef@2022-12-17-before-rollback&#39;</span> <span class="n">exists</span> <span class="ow">and</span> <span class="ow">is</span> <span class="n">bootable</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>This issue seems to be caused by creating zfs snapshots manually (in this case, <code class="docutils literal notranslate"><span class="pre">rpool&#64;2022-12-17-before-rollback</span></code>) in addition to ZSys/zsysctl states. In my case, the state I was aiming to roll back to (after rolling back to an earlier version) was named <code class="docutils literal notranslate"><span class="pre">before-rollback</span></code>, which might’ve been the culprit.</p>
+<p>Deleting the offending snapshot with <code class="docutils literal notranslate"><span class="pre">zfs</span> <span class="pre">destroy</span> <span class="pre">-r</span> <span class="pre">rpool&#64;2022-12-17-before-rollback</span></code> fixed the issue, and I was able to “roll forward” successfully. <code class="docutils literal notranslate"><span class="pre">zfs</span> <span class="pre">get</span> <span class="pre">creation</span> <span class="pre">POOL&#64;SNAPSHOT</span></code> queries the creation times of snapshots.</p>
+<p>If you’ve arrived at this error via other means, at least you may rest assured that rolling back is nondestructive <a class="footnote-reference brackets" href="#zsys-blog-states" id="id4" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a>.</p>
+</section>
+</section>
+<section id="sources-further-reading">
+<h2>Sources &amp; further reading<a class="headerlink" href="#sources-further-reading" title="Permalink to this heading">¶</a></h2>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="zsys-blog-states" role="note">
+<span class="label"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id1">1</a>,<a role="doc-backlink" href="#id4">2</a>)</span>
+<p><a class="reference external" href="https://didrocks.fr/2020/05/28/zfs-focus-on-ubuntu-20.04-lts-zsys-general-principle-on-state-management/">“ZFS focus on Ubuntu 20.04 LTS: ZSys general principle on state management”</a></p>
+</aside>
+<aside class="footnote brackets" id="sic" role="note">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id3">2</a><span class="fn-bracket">]</span></span>
+<p><a class="reference external" href="https://github.com/openzfs/zfs/issues/14298">https://github.com/openzfs/zfs/issues/14298</a></p>
+</aside>
+</aside>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../index.html">
+    <img class="logo" src="../_static/logo.png" alt="Logo"/>
+    
+    <h1 class="logo logo-name">introt</h1>
+    
+  </a>
+</p>
+
+
+
+<p class="blurb">stop-gaps for documentation gaps</p>
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../configs.html">Configurations</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../refs.html">References</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../openzfs.html">OpenZFS</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="links.html">Recommended links</a></li>
+<li class="toctree-l3"><a class="reference internal" href="backups.html">Encrypted ZFS backup creation and troubleshooting</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">ZSys tips and tricks</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/openzfs/zsys.rst.txt"
+            rel="nofollow">Show Source</a></li><li><a href="https://github.com/introt/docs/issues">Report Issue</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2021-2022, introt. Text is available under <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      &amp; <a href="https://github.com/introt/alabester">Alabester 0.7.22</a>
+      
+      |
+      <a href="../_sources/openzfs/zsys.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

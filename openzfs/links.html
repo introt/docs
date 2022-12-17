@@ -1,0 +1,155 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Recommended links &#8212; introt docs</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabester.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Encrypted ZFS backup creation and troubleshooting" href="backups.html" />
+    <link rel="prev" title="OpenZFS" href="../openzfs.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="recommended-links">
+<h1>Recommended links<a class="headerlink" href="#recommended-links" title="Permalink to this heading">¶</a></h1>
+<section id="introductory-material">
+<h2>Introductory material<a class="headerlink" href="#introductory-material" title="Permalink to this heading">¶</a></h2>
+<p>If you’re just getting starting with ZFS, I recommend reading these from start to end to gain a basic understanding of the lingo, tools, and setup choices involved. As usual: don’t go in unless you know how to get out; always have backups, never store them using unfamiliar tools, and don’t depend on their availability before checking their restorability.</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://wiki.ubuntu.com/ZFS">“ZFS”</a> on Ubuntu wiki. A short description of the file system and its use cases.</p></li>
+<li><p><a class="reference external" href="https://ubuntu.com/tutorials/setup-zfs-storage-pool">“Setup a ZFS storage pool”</a> on Ubuntu tutorials. A practical introduction to <code class="docutils literal notranslate"><span class="pre">zpool</span></code> and pool creation.</p></li>
+<li><p><a class="reference external" href="https://wiki.ubuntu.com/Kernel/Reference/ZFS">ZFS mini primer</a> by the Ubuntu kernel team. Explains key features along with some command examples.</p></li>
+<li><p><a class="reference external" href="https://openzfs.github.io/openzfs-docs/Getting%20Started/index.html">“Getting Started”, OpenZFS documentation</a>. Covers installation on multiple distributions, as well as <cite>their</cite> installation <cite>on</cite> ZFS <a class="footnote-reference brackets" href="#pun" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a>. There’s also a <a class="reference external" href="https://openzfs.github.io/openzfs-docs/Project%20and%20Community/FAQ.html">FAQ</a>, and a link to <a class="reference external" href="https://pthree.org/2012/04/17/install-zfs-on-debian-gnulinux/">Aaron Toponce’s documentation</a> which predates newer OpenZFS features like native encryption, but still holds up well as introductory material.</p></li>
+</ul>
+</section>
+<section id="tutorials">
+<h2>Tutorials<a class="headerlink" href="#tutorials" title="Permalink to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="https://xai.sh/2018/08/27/zfs-incremental-backups.html">“Incremental backups with zfs send/recv”</a>. Short and sweet - the whole site sits really well with me. Doesn’t cover encryption though, so I’ve put up some notes <a class="reference internal" href="backups.html#zfs-backups"><span class="std std-ref">here</span></a>.</p></li>
+<li><p><a class="reference external" href="https://ubuntu.com/tutorials/testing-the-self-healing-of-zfs-on-ubuntu#3-create-and-test-a-zfs-pool-with-a-striped-vdev">“Testing the self-healing of ZFS on Ubuntu 20.04”</a> on Ubuntu tutorials. Steps 3 &amp; 4 include commands to create “fake disks” for testing purposes (spoilers: just <code class="docutils literal notranslate"><span class="pre">dd</span></code> a gig from <code class="docutils literal notranslate"><span class="pre">/dev/zero</span></code>).</p></li>
+<li><p>Restoring individual files from snapshots without rolling back. The answer lies in the <code class="docutils literal notranslate"><span class="pre">.zfs/snapshot</span></code> directory, located at the top level of each dataset. It’s a really hidden virtual directory via which you have read-only access to that dataset’s snapshots. You’ll need to navigate to it manually. See <a class="reference external" href="https://didrocks.fr/2020/05/28/zfs-focus-on-ubuntu-20.04-lts-zsys-general-principle-on-state-management/">“Having access to previous user states”</a> for a small how-to, applicable to ZFS <a class="reference external" href="https://www.truenas.com/community/threads/dangerous-zfs-snapshot-directories.30828/">in general</a>. There’s also <a class="reference external" href="https://old.reddit.com/r/zfs/comments/gc9c54/backuprestore_of_zfs_snapshots/">this Reddit thread</a> in which u/DeHackEd describes their non-zfs backup setup.</p></li>
+</ul>
+</section>
+<section id="command-references">
+<h2>Command references<a class="headerlink" href="#command-references" title="Permalink to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="https://openzfs.github.io/openzfs-docs/man/index.html">“Man Pages”</a>, OpenZFS documentation. One of those manuals you might actually want to read - or at least skim - through before diving in. Unlike some online man pages, these ones have working links, and the subcommands’ pages are nicely split out, improving browsability. Here are some quick links for the usual suspects:</p>
+<ul>
+<li><p><a class="reference external" href="https://openzfs.github.io/openzfs-docs/man/8/zpool.8.html#SUBCOMMANDS">zpool subcommands</a></p></li>
+<li><p><a class="reference external" href="https://openzfs.github.io/openzfs-docs/man/8/zfs.8.html#SUBCOMMANDS">zfs subcommads</a></p></li>
+</ul>
+</li>
+</ul>
+<hr class="docutils" />
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="pun" role="note">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
+<p>There’s an old Finnish saying which could be translated as “eating feeds hunger”. After experiencing the magic of <a class="reference internal" href="backups.html#zfs-backups"><span class="std std-ref">zero-trust whole filesystem backups</span></a> of your data over the (sneaker)net, you’ll likely start wishing for all your backups to be as fluid and easy. They can be - you can even install your OS on ZFS! I can personally root for <a class="reference external" href="https://openzfs.github.io/openzfs-docs/Getting%20Started/Ubuntu/Ubuntu%2020.04%20Root%20on%20ZFS.html">the Ubuntu 20.04 installation instructions</a>; haven’t tried the newer one yet.</p>
+</aside>
+</aside>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../index.html">
+    <img class="logo" src="../_static/logo.png" alt="Logo"/>
+    
+    <h1 class="logo logo-name">introt</h1>
+    
+  </a>
+</p>
+
+
+
+<p class="blurb">stop-gaps for documentation gaps</p>
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../configs.html">Configurations</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../refs.html">References</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../openzfs.html">OpenZFS</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Recommended links</a></li>
+<li class="toctree-l3"><a class="reference internal" href="backups.html">Encrypted ZFS backup creation and troubleshooting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="zsys.html">ZSys tips and tricks</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/openzfs/links.rst.txt"
+            rel="nofollow">Show Source</a></li><li><a href="https://github.com/introt/docs/issues">Report Issue</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2021-2022, introt. Text is available under <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      &amp; <a href="https://github.com/introt/alabester">Alabester 0.7.22</a>
+      
+      |
+      <a href="../_sources/openzfs/links.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

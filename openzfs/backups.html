@@ -1,0 +1,311 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Encrypted ZFS backup creation and troubleshooting &#8212; introt docs</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabester.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="ZSys tips and tricks" href="zsys.html" />
+    <link rel="prev" title="Recommended links" href="links.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="encrypted-zfs-backup-creation-and-troubleshooting">
+<h1>Encrypted ZFS backup creation and troubleshooting<a class="headerlink" href="#encrypted-zfs-backup-creation-and-troubleshooting" title="Permalink to this heading">¶</a></h1>
+<p id="zfs-backups">Some notes on using <code class="docutils literal notranslate"><span class="pre">zfs</span> <span class="pre">send/recv</span></code> to take incremental backups of <strong>encrypted</strong> datasets. This article is not a full tutorial and does not cover eg. <code class="docutils literal notranslate"><span class="pre">zpool</span></code> creation or encryption key handling; however, as usual, command arguments will be explained and all sources linked and archieved for further reading.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you don’t use encryption, or need a refresher on ZFS send/receive functionality, Olaf Lessenich has you covered <a class="footnote-reference brackets" href="#xai" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a>.</p>
+</div>
+<p>For brevity, the following assumptions are made</p>
+<ol class="arabic simple">
+<li><p>The source pool <code class="docutils literal notranslate"><span class="pre">$src</span></code> has an encryption “pseudo-root” <a class="footnote-reference brackets" href="#pseudoroot" id="id2" role="doc-noteref"><span class="fn-bracket">[</span>4<span class="fn-bracket">]</span></a>, <code class="docutils literal notranslate"><span class="pre">$src/root</span></code>, and neither pool itself is encypted.</p></li>
+<li><p>You want to back up <code class="docutils literal notranslate"><span class="pre">$src/root</span></code> to <code class="docutils literal notranslate"><span class="pre">$dst/root</span></code>.</p></li>
+<li><p>Both pools are local - though transferring over the wire is just a matter of piping through SSH. You may also use sneakernet by using shell redirection to and from a file on a removable storage medium, but do note that such streams can not be considered as backups due to their volatile nature: a single bit flip is enough to prevent their decryption <a class="footnote-reference brackets" href="#cite" id="id3" role="doc-noteref"><span class="fn-bracket">[</span>5<span class="fn-bracket">]</span></a>.</p></li>
+<li><p>The pool names don’t contain spaces or characters that would need escaping.</p></li>
+<li><p>The target pool <code class="docutils literal notranslate"><span class="pre">$dst</span></code> is not mounted, has not been mounted, and will not be mounted between backups. See <a class="reference internal" href="#troubleshooting"><span class="std std-ref">Troubleshooting</span></a> for more information.</p></li>
+<li><p>You have working backups of all your data and will not hold me accountable in the event of data loss or worse. You’ve been warned.</p></li>
+</ol>
+<p>If your setup fits the assumptions, You (future me) can copy &amp; paste these commands straight into your root terminal (preferably from the <a class="reference external" href="https://introt.github.io/docs/_sources/openzfs/backups.rst.txt">raw reST source</a> to avoid pastejacking) for further, minimal editing, after sourcing the following variables:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span> <span class="nv">src</span><span class="o">=</span>source_pool_name
+<span class="nb">export</span> <span class="nv">dst</span><span class="o">=</span>destination_pool_name
+<span class="nb">alias</span> import-backup-pool<span class="o">=</span><span class="s1">&#39;zpool import -d /search/path/if/required $dst&#39;</span>
+</pre></div>
+</div>
+<p>You may use your favorite text editor to replace <code class="docutils literal notranslate"><span class="pre">/root</span></code> with a preferably unique <a class="footnote-reference brackets" href="#unique" id="id4" role="doc-noteref"><span class="fn-bracket">[</span>6<span class="fn-bracket">]</span></a> name.</p>
+<section id="initial-send-recv">
+<h2>Initial send/recv<a class="headerlink" href="#initial-send-recv" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>import-backup-pool  <span class="c1"># alias</span>
+zfs snap -r <span class="nv">$src</span>@initial  <span class="c1"># -r for recursive</span>
+zfs send -Rw <span class="nv">$src</span>/root@initial <span class="p">|</span> zfs recv -s <span class="nv">$dst</span>/root
+<span class="c1"># zpool export $dst</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">$dst/root</span></code> is not a typo.</p>
+<ul class="simple">
+<li><p>Neither <code class="docutils literal notranslate"><span class="pre">-d</span></code> or <code class="docutils literal notranslate"><span class="pre">-e</span></code> is needed here, because we’re transferring <code class="docutils literal notranslate"><span class="pre">$src/root</span></code>, not <code class="docutils literal notranslate"><span class="pre">$src</span></code>.</p></li>
+<li><p>The trailing <code class="docutils literal notranslate"><span class="pre">/root</span></code> is required, or else we’d overwrite the true <code class="docutils literal notranslate"><span class="pre">$dst</span></code> root dataset.</p></li>
+</ul>
+</div>
+<ul class="simple">
+<li><p>On the sending side:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">-R</span></code> replicate the whole filesystem (up until the snapshot)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-w</span></code> raw, <strong>required with encrypted datasets</strong></p></li>
+</ul>
+</li>
+<li><p>On the receiving side:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">-s</span></code> saves partial stream in case of error</p>
+<ul>
+<li><p>I usually omit this from small (initial) transfers as retries will otherwise require some cleanup.</p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>On both sides, you may append:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">-v</span></code> for verbosity</p></li>
+</ul>
+</li>
+</ul>
+<section id="transferring-subdatasets-created-after-the-initial-send-recv">
+<h3>Transferring subdatasets created after the initial send/recv<a class="headerlink" href="#transferring-subdatasets-created-after-the-initial-send-recv" title="Permalink to this heading">¶</a></h3>
+<p>New subdatasets created between snapshots are included in the incremental transfers of the pseudo-root <a class="footnote-reference brackets" href="#full-stream" id="id6" role="doc-noteref"><span class="fn-bracket">[</span>9<span class="fn-bracket">]</span></a>, but if you for any reason want to transfer a single subdataset, read on.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This is a bit of a footgun; since “<code class="docutils literal notranslate"><span class="pre">zfs</span> <span class="pre">receive</span> <span class="pre">-F</span> <span class="pre">cannot</span> <span class="pre">be</span> <span class="pre">used</span> <span class="pre">to</span> <span class="pre">destroy</span> <span class="pre">an</span> <span class="pre">encrypted</span> <span class="pre">filesystem</span></code>”, you’ll have to clean up after yourself manually. It <em>shouldn’t</em> be a big deal, but since it’s “left as an exercise for the reader”, I’ll have to advice against it.</p>
+<p>You’ve been warned.</p>
+</div>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>import-backup-pool
+zfs snap -r <span class="nv">$src</span>@sub-initial
+zfs send -Rw <span class="nv">$src</span>/root/new@sub-initial <span class="p">|</span> zfs recv -sue <span class="nv">$dst</span>/root
+</pre></div>
+</div>
+<p>If you’ve created a whole hierarchy of new datasets, you must start from the topmost new one.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">-u</span></code>: the target is not mounted</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-e</span></code> is used here to strip <code class="docutils literal notranslate"><span class="pre">root</span></code> from the dataset path; if it was deeper, you’d need to write those steps on the receiving side too.</p>
+<ul>
+<li><p>I prefer this approach over using <code class="docutils literal notranslate"><span class="pre">-d</span></code> (which removes just the <code class="docutils literal notranslate"><span class="pre">$src</span></code> (root dataset) name), as it allows receiving into <code class="docutils literal notranslate"><span class="pre">$dst/root</span></code> instead of directly to <code class="docutils literal notranslate"><span class="pre">$dst</span></code>, givin at least some false sense of more control.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="subsequent-incremental-transfers">
+<h2>Subsequent, incremental transfers<a class="headerlink" href="#subsequent-incremental-transfers" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>import-backup-pool
+zfs snap -r <span class="nv">$src</span>@incremental
+zfs send -Rwi @initial <span class="nv">$src</span>/root@incremental <span class="p">|</span> zfs recv -u <span class="nv">$dst</span>/root
+<span class="c1"># zpool export $dst</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">-I</span></code> for incremental transfer, including the intermittent snapshots <a class="footnote-reference brackets" href="#xai" id="id7" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p>
+<ul>
+<li><p>use <code class="docutils literal notranslate"><span class="pre">-i</span></code> to exclude snapshots taken between <code class="docutils literal notranslate"><span class="pre">&#64;initial</span></code> and <code class="docutils literal notranslate"><span class="pre">&#64;incremental</span></code></p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-u</span></code>: the target is not mounted</p></li>
+</ul>
+<p>Note that we’re again not using either <code class="docutils literal notranslate"><span class="pre">-d</span></code> or <code class="docutils literal notranslate"><span class="pre">-e</span></code>, as we’re just transferring snapshots from the pseudoroot to its replicate.</p>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this heading">¶</a></h2>
+<p>This is not an exhaustive list; merely some of the ones I’ve run into in the wild and whilst writing this article.</p>
+<section id="dry-runs-with-n">
+<h3>Dry runs with <code class="docutils literal notranslate"><span class="pre">-n</span></code><a class="headerlink" href="#dry-runs-with-n" title="Permalink to this heading">¶</a></h3>
+<ul>
+<li><p>As <code class="docutils literal notranslate"><span class="pre">zfs</span> <span class="pre">send</span></code> dry runs create no stream, they can not be chained with <code class="docutils literal notranslate"><span class="pre">zfs</span> <span class="pre">recv</span></code>.</p></li>
+<li><p>Can not be used on the initial receive: you’ll get an error of a missing dataset:</p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">cannot</span> <span class="pre">open</span> <span class="pre">'destination/root':</span> <span class="pre">dataset</span> <span class="pre">does</span> <span class="pre">not</span> <span class="pre">exist</span></code>
+<code class="docutils literal notranslate"><span class="pre">cannot</span> <span class="pre">receive</span> <span class="pre">new</span> <span class="pre">filesystem</span> <span class="pre">stream:</span> <span class="pre">unable</span> <span class="pre">to</span> <span class="pre">restore</span> <span class="pre">to</span> <span class="pre">destination</span></code></p>
+</div></blockquote>
+</li>
+</ul>
+</section>
+<section id="cannot-receive-failed-to-read-from-stream">
+<h3><code class="docutils literal notranslate"><span class="pre">cannot</span> <span class="pre">receive:</span> <span class="pre">failed</span> <span class="pre">to</span> <span class="pre">read</span> <span class="pre">from</span> <span class="pre">stream</span></code><a class="headerlink" href="#cannot-receive-failed-to-read-from-stream" title="Permalink to this heading">¶</a></h3>
+<p>Did you forget to remove <code class="docutils literal notranslate"><span class="pre">-n</span></code> from the sending side? Been there. If that doesn’t help, add a <code class="docutils literal notranslate"><span class="pre">-v</span></code> instead and double check your pipeline.</p>
+</section>
+<section id="cannot-receive-incremental-stream-destination-dst-root-has-been-modified">
+<h3><code class="docutils literal notranslate"><span class="pre">cannot</span> <span class="pre">receive</span> <span class="pre">incremental</span> <span class="pre">stream:</span> <span class="pre">destination</span> <span class="pre">$dst/root</span> <span class="pre">has</span> <span class="pre">been</span> <span class="pre">modified</span></code><a class="headerlink" href="#cannot-receive-incremental-stream-destination-dst-root-has-been-modified" title="Permalink to this heading">¶</a></h3>
+<p>Most tutorials add <code class="docutils literal notranslate"><span class="pre">-F</span></code> to the receiving side to prevent this error from popping up by forcing a rollback to the <code class="docutils literal notranslate"><span class="pre">fromsnap</span></code> (leftmost snapshot in the send command), but when <code class="docutils literal notranslate"><span class="pre">zfs</span> <span class="pre">diff</span></code> doesn’t show what has changed, my curiosity is not satisfied. Security wise, since we’re talking about Zero Trust stuff, wouldn’t you like to know if your backup has been touched?</p>
+<p>Turns out mounting the backup can “soil” your snapshot and prevent the whole dataset from receiving a stream. Ask me how I know.</p>
+<p>To find out whether your snapshot has been soiled, run <code class="docutils literal notranslate"><span class="pre">zfs</span> <span class="pre">list</span> <span class="pre">-po</span> <span class="pre">written,written&#64;$LATEST_SNAPSHOT</span> <span class="pre">$dst/root</span></code> - non-zero values mean you’ll need to roll back with <code class="docutils literal notranslate"><span class="pre">zfs</span> <span class="pre">rollback</span> <span class="pre">-r</span> <span class="pre">$dst/root&#64;$LATEST_SNAPSHOT</span></code> <a class="footnote-reference brackets" href="#jiml" id="id8" role="doc-noteref"><span class="fn-bracket">[</span>7<span class="fn-bracket">]</span></a>.</p>
+</section>
+<section id="cannot-open-dst-root-sub-dataset-does-not-exist">
+<h3><code class="docutils literal notranslate"><span class="pre">cannot</span> <span class="pre">open</span> <span class="pre">'$dst/root/sub':</span> <span class="pre">dataset</span> <span class="pre">does</span> <span class="pre">not</span> <span class="pre">exist</span></code><a class="headerlink" href="#cannot-open-dst-root-sub-dataset-does-not-exist" title="Permalink to this heading">¶</a></h3>
+<p>Read on.</p>
+</section>
+<section id="cannot-receive-incremental-stream-destination-dst-root-does-not-exist">
+<h3><code class="docutils literal notranslate"><span class="pre">cannot</span> <span class="pre">receive</span> <span class="pre">incremental</span> <span class="pre">stream:</span> <span class="pre">destination</span> <span class="pre">'$dst/root'</span> <span class="pre">does</span> <span class="pre">not</span> <span class="pre">exist</span></code><a class="headerlink" href="#cannot-receive-incremental-stream-destination-dst-root-does-not-exist" title="Permalink to this heading">¶</a></h3>
+<p>If the destination path is as expected and this isn’t a dry run, you’re missing the initial transfer.</p>
+</section>
+<section id="cannot-receive-incremental-stream-most-recent-snapshot-of-dst-root-does-not-match-incremental-source">
+<h3><code class="docutils literal notranslate"><span class="pre">cannot</span> <span class="pre">receive</span> <span class="pre">incremental</span> <span class="pre">stream:</span> <span class="pre">most</span> <span class="pre">recent</span> <span class="pre">snapshot</span> <span class="pre">of</span> <span class="pre">$dst/root</span> <span class="pre">does</span> <span class="pre">not</span> <span class="pre">match</span> <span class="pre">incremental</span> <span class="pre">source</span></code><a class="headerlink" href="#cannot-receive-incremental-stream-most-recent-snapshot-of-dst-root-does-not-match-incremental-source" title="Permalink to this heading">¶</a></h3>
+<p>Check your incremental send’s start and end snapshots. The start snapshot <em>must</em> exist in the destination, and can not be a bookmark. If you’ve deleted all common snapshots, tough luck - you’ll have to make a new complete transfer.</p>
+<blockquote>
+<div><p><em>“The “solution” is simply to not delete source snapshots unless those snapshots have been verified to have transmitted successfully (i.e. show up in the remote’s zfs list -tall output).”</em> <a class="footnote-reference brackets" href="#thewabbit" id="id9" role="doc-noteref"><span class="fn-bracket">[</span>8<span class="fn-bracket">]</span></a></p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">zfs</span> <span class="pre">list</span> <span class="pre">-tall</span></code> (or <code class="docutils literal notranslate"><span class="pre">-t</span> <span class="pre">all</span></code>) shouldn’t be followed by a pool name.</p>
+</section>
+<section id="local-fs-dst-root-new-does-not-have-fromsnap-initial-in-stream-must-have-been-deleted-locally-ignoring">
+<h3><code class="docutils literal notranslate"><span class="pre">local</span> <span class="pre">fs</span> <span class="pre">$dst/root/new</span> <span class="pre">does</span> <span class="pre">not</span> <span class="pre">have</span> <span class="pre">fromsnap</span> <span class="pre">(initial</span> <span class="pre">in</span> <span class="pre">stream);</span> <span class="pre">must</span> <span class="pre">have</span> <span class="pre">been</span> <span class="pre">deleted</span> <span class="pre">locally;</span> <span class="pre">ignoring</span></code><a class="headerlink" href="#local-fs-dst-root-new-does-not-have-fromsnap-initial-in-stream-must-have-been-deleted-locally-ignoring" title="Permalink to this heading">¶</a></h3>
+<p>If you’re not getting a blocking error and the dataset shows up on the destination, this is fine <a class="footnote-reference brackets" href="#full-stream" id="id10" role="doc-noteref"><span class="fn-bracket">[</span>9<span class="fn-bracket">]</span></a>. Dry runs should print <code class="docutils literal notranslate"><span class="pre">would</span> <span class="pre">receive</span> <span class="pre">full</span> <span class="pre">stream</span></code>, as it’s just the “incrementality” that’s being ignored when doing recursive transfers.</p>
+<p>If you are sending/receiving non-recursively, see <a class="reference internal" href="#transferring-subdatasets-created-after-the-initial-send-recv"><span class="std std-ref">Transferring subdatasets created after the initial send/recv</span></a>.</p>
+</section>
+<section id="cannot-perform-raw-receive-on-top-of-existing-unencrypted-dataset">
+<h3><code class="docutils literal notranslate"><span class="pre">cannot</span> <span class="pre">perform</span> <span class="pre">raw</span> <span class="pre">receive</span> <span class="pre">on</span> <span class="pre">top</span> <span class="pre">of</span> <span class="pre">existing</span> <span class="pre">unencrypted</span> <span class="pre">dataset</span></code><a class="headerlink" href="#cannot-perform-raw-receive-on-top-of-existing-unencrypted-dataset" title="Permalink to this heading">¶</a></h3>
+<p>Make sure you are receiving the stream into <code class="docutils literal notranslate"><span class="pre">$dst/root</span></code>, not <code class="docutils literal notranslate"><span class="pre">$dst</span></code> directly.</p>
+</section>
+</section>
+<section id="sources-further-reading">
+<h2>Sources &amp; further reading<a class="headerlink" href="#sources-further-reading" title="Permalink to this heading">¶</a></h2>
+<p>Personally, I’m going to read <a class="reference external" href="https://utcc.utoronto.ca/~cks/space/blog/solaris/ZFSBookmarksWhatFor">“ZFS bookmarks and what they’re good for”</a> (as well as the relevant manual pages) and give bookmarks some thought. From skimming, it seems they are like snapshots without the reference, saving space at the sending end by only keeping a timestamp.</p>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="xai" role="note">
+<span class="label"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id1">1</a>,<a role="doc-backlink" href="#id7">2</a>)</span>
+<p><a class="reference external" href="https://xai.sh/2018/08/27/zfs-incremental-backups.html">“Incremental backups with zfs send/recv”</a></p>
+</aside>
+<aside class="footnote brackets" id="pseudoroot" role="note">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id2">4</a><span class="fn-bracket">]</span></span>
+<p>The real root dataset shares its name with the pool, and has some extra protections which can make maintenance harder; a “pseudo-root” is a subdataset, one level down from the real root, that one puts all their other datasets under. You can read more about the practise as well as maintenance of natively-encrypted datasets from these TrueNAS forum threads:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://web.archive.org/web/20220404154555/https://www.truenas.com/community/threads/difficulty-replicating-native-zfs-encrypted-pool-to-new-pool.89816/">“Difficulty replicating native ZFS encrypted pool to new pool.”</a></p></li>
+<li><p>“Confused by native ZFS encryption, some observations, many questions” (<a class="reference external" href="https://web.archive.org/web/20211123095242/https://www.truenas.com/community/threads/confused-by-native-zfs-encryption-some-observations-many-questions.89081/#post-617134">1</a>, <a class="reference external" href="https://web.archive.org/web/20220417170801/https://www.truenas.com/community/threads/confused-by-native-zfs-encryption-some-observations-many-questions.89081/#post-620035">2</a>) (linked to by the above)</p></li>
+</ul>
+</aside>
+<aside class="footnote brackets" id="cite" role="note">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id3">5</a><span class="fn-bracket">]</span></span>
+<p><a class="reference external" href="https://xkcd.com/285/">“Just trust me on this one”</a>.</p>
+</aside>
+<aside class="footnote brackets" id="unique" role="note">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id4">6</a><span class="fn-bracket">]</span></span>
+<p>Pseudo-roots should have unique names in case you ever need to store multiple ones in a single pool. Don’t worry though, you can always <code class="docutils literal notranslate"><span class="pre">zfs</span> <span class="pre">rename</span> <span class="pre">$src/root</span> <span class="pre">$src/unique_root42</span></code> at any time - just remember to also rename any backups as well!</p>
+</aside>
+<aside class="footnote brackets" id="jiml" role="note">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id8">7</a><span class="fn-bracket">]</span></span>
+<p><a class="reference external" href="https://unix.stackexchange.com/a/531248">Jim L.’s answer</a> to “How can <em>efficiently</em> be determined whether a ZFS dataset has been changed since the last snapshot as a simple yes/no-question?”[sic] on Unix &amp; Linux StackExchange</p>
+</aside>
+<aside class="footnote brackets" id="thewabbit" role="note">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id9">8</a><span class="fn-bracket">]</span></span>
+<p><a class="reference external" href="https://serverfault.com/a/723104">the-wabbit’s answer</a> to “ZFS snapshot send incremental” on serverfault</p>
+</aside>
+<aside class="footnote brackets" id="full-stream" role="note">
+<span class="label"><span class="fn-bracket">[</span>9<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id6">1</a>,<a role="doc-backlink" href="#id10">2</a>)</span>
+<p><a class="reference external" href="https://www.truenas.com/community/threads/zfs-incremental-send-on-recursive-snapshot.16712/">Dusan’s answer</a> to “ZFS incremental send on recursive snapshot” on TrueNAS forums.</p>
+</aside>
+</aside>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../index.html">
+    <img class="logo" src="../_static/logo.png" alt="Logo"/>
+    
+    <h1 class="logo logo-name">introt</h1>
+    
+  </a>
+</p>
+
+
+
+<p class="blurb">stop-gaps for documentation gaps</p>
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../configs.html">Configurations</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../refs.html">References</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../openzfs.html">OpenZFS</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="links.html">Recommended links</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Encrypted ZFS backup creation and troubleshooting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="zsys.html">ZSys tips and tricks</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/openzfs/backups.rst.txt"
+            rel="nofollow">Show Source</a></li><li><a href="https://github.com/introt/docs/issues">Report Issue</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2021-2022, introt. Text is available under <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      &amp; <a href="https://github.com/introt/alabester">Alabester 0.7.22</a>
+      
+      |
+      <a href="../_sources/openzfs/backups.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

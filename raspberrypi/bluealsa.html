@@ -1,0 +1,352 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+<meta content="Configuring BlueAlsa on a headless Raspberry Pi" name="description" />
+<meta content="Raspberry Pi, Rasbian, Bluetooth, audio, BlueAlsa, ALSA, PulseAudio, BlueZ, mpv, headless, command line, console, terminal" name="keywords" />
+
+    <title>Bluetooth audio on a headless Raspberry Pi using BlueAlsa &#8212; introt docs</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabester.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="References" href="../refs.html" />
+    <link rel="prev" title="Raspberry Pi" href="../raspberrypi.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="bluetooth-audio-on-a-headless-raspberry-pi-using-bluealsa">
+<h1>Bluetooth audio on a headless Raspberry Pi using BlueAlsa<a class="headerlink" href="#bluetooth-audio-on-a-headless-raspberry-pi-using-bluealsa" title="Permalink to this heading">¶</a></h1>
+<section id="intro">
+<h2>Intro<a class="headerlink" href="#intro" title="Permalink to this heading">¶</a></h2>
+<p>How to connect a Bluetooth speaker or a pair of Bluetooth headphones to a Rapberry Pi using the command line. <strong>No PulseAudio required!</strong></p>
+<p>Tested on a Raspberry Pi 400 running freshly installed <a class="footnote-reference brackets" href="#install" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a> Raspberry Pi OS Lite aka <strong>Rasbian GNU/Linux 10 (Buster)</strong>. Report any issues <a class="reference external" href="https://github.com/introt/docs/issues">on GitHub</a>.</p>
+<p>BlueAlsa <a class="footnote-reference brackets" href="#bluealsa" id="id2" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a> is a Bluetooth audio backend for ALSA. It bridges the gap between BlueZ 5 (the Bluetooth stack) and ALSA (the audio stack) without the need for PulseAudio (a fat sound server).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>These instructions don’t apply to Rasbian 11 as it doesn’t ship a BlueAlsa package.</p>
+<p>Rasbian 12 should include <code class="docutils literal notranslate"><span class="pre">bluez-alsa-utils</span></code> <a class="footnote-reference brackets" href="#debianwiki" id="id3" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a>; this page will be updated thereafter.</p>
+</div>
+</section>
+<section id="command-lines">
+<h2>Command lines<a class="headerlink" href="#command-lines" title="Permalink to this heading">¶</a></h2>
+<p><a class="reference download internal" download="" href="../_downloads/c6e473d760fc8518174076057c6c37ef/bluealsa.txt"><code class="xref download docutils literal notranslate"><span class="pre">A</span> <span class="pre">full</span> <span class="pre">terminal</span> <span class="pre">log</span> <span class="pre">is</span> <span class="pre">available</span> <span class="pre">here.</span></code></a></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The prompts have been removed for the best copy-pasting experience. You can highlight whole code blocks, no need to aim for corners!</p>
+<p>Worried about “Pastejacking”? You can clone this website’s <a class="reference external" href="https://github.com/introt/docs">git repo</a> and get hit by malicious build scripts instead or <a class="reference external" href="https://introt.github.io/docs/_sources/raspberrypi/bluealsa.rst.txt">view this page’s raw reST source</a>.</p>
+</div>
+<section id="adding-the-pi-user-to-the-bluetooth-group">
+<h3>Adding the ‘pi’ user to the ‘bluetooth’ group<a class="headerlink" href="#adding-the-pi-user-to-the-bluetooth-group" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>sudo usermod -G bluetooth -a pi <span class="o">&amp;&amp;</span> <span class="nb">logout</span>
+</pre></div>
+</div>
+<p>Logout is needed for the change to take effect.</p>
+</section>
+<section id="installing-and-starting-the-bluealsa-daemon">
+<h3>Installing and starting the BlueAlsa daemon<a class="headerlink" href="#installing-and-starting-the-bluealsa-daemon" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>sudo apt update <span class="o">&amp;&amp;</span> sudo apt install bluealsa -y <span class="o">&amp;&amp;</span> <span class="se">\</span>
+sudo service bluealsa start
+</pre></div>
+</div>
+<p>On Debian and derivatives the service will be enabled on startup by default.</p>
+</section>
+<section id="connecting-a-bluetooth-device">
+<h3>Connecting a Bluetooth device<a class="headerlink" href="#connecting-a-bluetooth-device" title="Permalink to this heading">¶</a></h3>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The code blocks in this section can not be copy-pasted.</p>
+<p>Lines with commands to enter are emphasized.</p>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">00:00:00:00:00:00</span></code> and <code class="docutils literal notranslate"><span class="pre">AA:BB:CC:DD:EE:FF</span></code> below stand for the MAC addresses of your Bluetooth controller and audio device, respectively. You’ll find them out soon.</p>
+<section id="using-bluetoothctl-interactively">
+<h4>Using bluetoothctl interactively<a class="headerlink" href="#using-bluetoothctl-interactively" title="Permalink to this heading">¶</a></h4>
+<p>Automating <code class="docutils literal notranslate"><span class="pre">bluetoothctl</span></code> is currently not covered in this article. I’ve listed some pointers here <a class="footnote-reference brackets" href="#autobtctl" id="id4" role="doc-noteref"><span class="fn-bracket">[</span>6<span class="fn-bracket">]</span></a>.</p>
+<p>Start the <code class="docutils literal notranslate"><span class="pre">bluetoothctl</span></code> shell. On Raspbian Lite Bluetooth is enabled out of the box and the agent is registered automatically.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span><span class="hll">pi@raspberrypi:~ $ bluetoothctl
+</span>Agent registered
+[bluetooth]#
+</pre></div>
+</div>
+<p>The last line shows the <code class="docutils literal notranslate"><span class="pre">bluetoothctl</span></code> prompt; the following commands are executed in the <code class="docutils literal notranslate"><span class="pre">bluetoothctl</span></code> shell.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Tab completion works here, no need to type the full address!</p>
+</div>
+<p>To discover your Bluetooth device’s MAC, turn <code class="docutils literal notranslate"><span class="pre">scan</span> <span class="pre">on</span></code>. <strong>Make sure the device is in pairing mode!</strong></p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span><span class="hll">[bluetooth]# scan on
+</span>Discovery started
+[CHG] Controller 00:00:00:00:00:00 Discovering: yes
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">bluetoothctl</span></code> will keep spitting out scan results so you might want to turn <code class="docutils literal notranslate"><span class="pre">scan</span> <span class="pre">off</span></code> after recognizing your device. Exiting <code class="docutils literal notranslate"><span class="pre">bluetoothctl</span></code> will turn off scanning automatically, but we’re not there yet!</p>
+<p>Next up: pairing, trusting and connecting. Trusting enables connecting automatically, including after reboot. Yet you need to connect manually for the first time.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span><span class="hll">[bluetooth]# pair AA:BB:CC:DD:EE:FF
+</span>Attempting to pair with AA:BB:CC:DD:EE:FF
+[CHG] Device AA:BB:CC:DD:EE:FF Connected: yes
+[CHG] Device AA:BB:CC:DD:EE:FF ServicesResolved: yes
+[CHG] Device AA:BB:CC:DD:EE:FF Paired: yes
+Pairing successful
+[CHG] Device AA:BB:CC:DD:EE:FF ServicesResolved: no
+[CHG] Device AA:BB:CC:DD:EE:FF Connected: no
+
+<span class="hll">[bluetooth]# trust AA:BB:CC:DD:EE:FF
+</span>[CHG] Device AA:BB:CC:DD:EE:FF Trusted: yes
+Changing AA:BB:CC:DD:EE:FF trust succeeded
+
+<span class="hll">[bluetooth]# connect AA:BB:CC:DD:EE:FF
+</span>Attempting to connect to AA:BB:CC:DD:EE:FF
+[CHG] Device AA:BB:CC:DD:EE:FF Connected: yes
+Connection successful
+</pre></div>
+</div>
+<p>The prompt changes to reflect connection status. Exit the <code class="docutils literal notranslate"><span class="pre">bluetoothctl</span></code> shell with either <code class="docutils literal notranslate"><span class="pre">^D</span></code> or typing <code class="docutils literal notranslate"><span class="pre">quit</span></code>.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span><span class="hll">[BT DEVICE NAME]# quit
+</span></pre></div>
+</div>
+<p>Your Bluetooth device’s MAC address is needed in the next step, so let’s save it into a variable as follows:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="hll">pi@raspberrypi:~ $ <span class="nv">MAC</span><span class="o">=</span><span class="s2">&quot;AA:BB:CC:DD:EE:FF&quot;</span>
+</span></pre></div>
+</div>
+</section>
+</section>
+<section id="playing-audio">
+<h3>Playing audio<a class="headerlink" href="#playing-audio" title="Permalink to this heading">¶</a></h3>
+<p>The following barebones system-wide config for <code class="docutils literal notranslate"><span class="pre">bluealsa</span></code> defaults to using A2DP (ie. not sounding like a cheap handsfree); see the Gentoo Wiki article on Bluetooth headphones <a class="footnote-reference brackets" href="#gentoowiki" id="id5" role="doc-noteref"><span class="fn-bracket">[</span>4<span class="fn-bracket">]</span></a>, the BlueALSA README <a class="footnote-reference brackets" href="#bluealsa" id="id6" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a> and the ALSA Wiki <a class="footnote-reference brackets" href="#alsawiki" id="id7" role="doc-noteref"><span class="fn-bracket">[</span>5<span class="fn-bracket">]</span></a> for more information about configuration, listed here in order of thoroughness and relevance.</p>
+<p><a class="reference download internal" download="" href="../_downloads/13b2a06cd84652a854c54a5407185f1d/asound.conf"><code class="xref download docutils literal notranslate"><span class="pre">A</span> <span class="pre">simple</span> <span class="pre">multi-device</span> <span class="pre">asound.conf</span> <span class="pre">can</span> <span class="pre">be</span> <span class="pre">found</span> <span class="pre">here.</span></code></a></p>
+<p>The following lines are indented with four spaces; the tab key doesn’t work as expected in here documents <a class="footnote-reference brackets" href="#heretutorial" id="id8" role="doc-noteref"><span class="fn-bracket">[</span>7<span class="fn-bracket">]</span></a>, but it does in your text editor.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">$MAC</span></code> is your Bluetooth device’s MAC address and is substituted automatically (as long as you did the previous section in the same shell). Feel free to copypaste!</p>
+</div>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>sudo tee /etc/asound.conf <span class="s">&lt;&lt;EOF</span>
+<span class="s">defaults.bluealsa {</span>
+<span class="s">    interface &quot;hci0&quot;</span>
+<span class="s">    device &quot;$MAC&quot;</span>
+<span class="s">    profile &quot;a2dp&quot;</span>
+<span class="s">}</span>
+<span class="s">EOF</span>
+</pre></div>
+</div>
+<p>All done. Test with <code class="docutils literal notranslate"><span class="pre">aplay</span></code>:</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Loud!</p>
+</div>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>aplay -D bluealsa /usr/share/sounds/alsa/Front_Center.wav
+</pre></div>
+</div>
+<p>The file should play without throwing any errors.</p>
+<section id="example-of-streaming-audio-from-youtube-using-mpv">
+<h4>Example of streaming audio from YouTube using mpv<a class="headerlink" href="#example-of-streaming-audio-from-youtube-using-mpv" title="Permalink to this heading">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">youtube-dl</span></code> <a class="footnote-reference brackets" href="#ytdl" id="id9" role="doc-noteref"><span class="fn-bracket">[</span>8<span class="fn-bracket">]</span></a> version installed in tandem with <code class="docutils literal notranslate"><span class="pre">mpv</span></code> is really old; the package from PyPI is used here instead.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>sudo apt install -y python3-pip mpv <span class="o">&amp;&amp;</span> <span class="se">\</span>
+sudo apt purge -y youtube-dl <span class="o">&amp;&amp;</span> <span class="se">\</span>
+sudo pip3 install youtube-dl <span class="o">&amp;&amp;</span> <span class="se">\</span>
+mpv --no-video --audio-device<span class="o">=</span>alsa/bluealsa ytdl://dQw4w9WgXcQ
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">mpv</span></code> can be configured to use BlueAlsa by default. Below is a simple system-wide <code class="docutils literal notranslate"><span class="pre">mpv.conf</span></code> for audio-only Bluetooth usage; <code class="docutils literal notranslate"><span class="pre">~/.config/mpv/mpv.conf</span></code> is where per-user configuration resides. For more information, search for “Configuration files” in the mpv manual <a class="footnote-reference brackets" href="#manmpv" id="id10" role="doc-noteref"><span class="fn-bracket">[</span>9<span class="fn-bracket">]</span></a>. <code class="docutils literal notranslate"><span class="pre">alsa/$PCM_NAME</span></code> (for example <code class="docutils literal notranslate"><span class="pre">alsa/btheadset</span></code>) is used to refer to a spesific device.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>sudo tee /etc/mpv/mpv.conf <span class="s">&lt;&lt;EOF</span>
+<span class="s">no-video</span>
+<span class="s">volume=50</span>
+<span class="s">audio-device=alsa/bluealsa</span>
+<span class="s">EOF</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="disabling-sap-optional">
+<h3>Disabling SAP (optional)<a class="headerlink" href="#disabling-sap-optional" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>sudo mkdir /etc/systemd/system/bluetooth.service.d <span class="o">&amp;&amp;</span> <span class="se">\</span>
+<span class="nb">cd</span> /etc/systemd/system/bluetooth.service.d <span class="o">&amp;&amp;</span> <span class="se">\</span>
+sudo tee <span class="m">01</span>-disable-sap-plugin.conf <span class="s">&lt;&lt;EOF</span>
+<span class="s">[Service]</span>
+<span class="s">ExecStart=</span>
+<span class="s">ExecStart=/usr/lib/bluetooth/bluetoothd --noplugin=sap</span>
+<span class="s">EOF</span>
+sudo systemctl daemon-reload <span class="o">&amp;&amp;</span> <span class="se">\</span>
+sudo systemctl restart bluetooth.service
+</pre></div>
+</div>
+<p>The empty <code class="docutils literal notranslate"><span class="pre">ExecStart=</span></code> line is required for replacing the daemon’s start command and not just appending to it <a class="footnote-reference brackets" href="#disapble" id="id11" role="doc-noteref"><span class="fn-bracket">[</span>10<span class="fn-bracket">]</span></a>.</p>
+<p>Reloading daemon configurations and restarting the <code class="docutils literal notranslate"><span class="pre">bluetooth</span></code> service requires no reboot. <a class="footnote-reference brackets" href="#pun" id="id12" role="doc-noteref"><span class="fn-bracket">[</span>11<span class="fn-bracket">]</span></a></p>
+</section>
+</section>
+<section id="further-reading">
+<h2>Further reading<a class="headerlink" href="#further-reading" title="Permalink to this heading">¶</a></h2>
+<p>I have found the following resources useful. Feel free to look elsewhere, but be wary of everything assuming you have or need PulseAudio. To prevent link rot, I’ve made sure both <a class="reference external" href="https://web.archive.org/">the Internet Archive Wayback Machine</a> and archive.today have a copy available as well as forked the repos/gists on GitHub.</p>
+<p>See also the open GitHub issue “<a class="reference external" href="https://github.com/introt/docs/issues/5">Add a mention on setting the sound device as default</a>” for some discussion regarding ALSA defaults and fallbacks, as well as how to set a higher baud rate to fix sound stuttering.</p>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="install" role="note">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
+<p>Shameless self-promotion: Check out my <a class="reference external" href="https://github.com/introt/headless-rpi-setup-script">headless Raspberry Pi setup script</a> that takes care of writing the disk image, configuring the wifi and setting up SSH keys for login. Makes testing these tutorials with latest software really straightforward, just need to download the latest image and run the script.</p>
+</aside>
+<aside class="footnote brackets" id="bluealsa" role="note">
+<span class="label"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id2">1</a>,<a role="doc-backlink" href="#id6">2</a>,<a role="doc-backlink" href="#id13">3</a>)</span>
+<p>See <a class="reference external" href="https://github.com/Arkq/bluez-alsa">the project README</a> for more information about BlueAlsa and its configuration &amp; usage.</p>
+</aside>
+<aside class="footnote brackets" id="debianwiki" role="note">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id3">3</a><span class="fn-bracket">]</span></span>
+<p>“Bluetooth/Alsa”, <a class="reference external" href="https://wiki.debian.org/Bluetooth/Alsa">Debian Wiki</a>. Raspbian is based on Debian.</p>
+</aside>
+<aside class="footnote brackets" id="gentoowiki" role="note">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id5">4</a><span class="fn-bracket">]</span></span>
+<p>“Bluetooth headset”, <a class="reference external" href="https://wiki.gentoo.org/wiki/Bluetooth_headset">Gentoo Linux Wiki</a>. A good resource for troubleshooting, includes some ALSA configuration examples.</p>
+</aside>
+<aside class="footnote brackets" id="alsawiki" role="note">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id7">5</a><span class="fn-bracket">]</span></span>
+<p>“.asoundrc”, <a class="reference external" href="https://alsa.opensrc.org/Asoundrc">(Unofficial) ALSA wiki</a>. Doesn’t include Bluetooth stuff, see <a class="footnote-reference brackets" href="#bluealsa" id="id13" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a> for that part.</p>
+</aside>
+<aside class="footnote brackets" id="autobtctl" role="note">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id4">6</a><span class="fn-bracket">]</span></span>
+<p><code class="docutils literal notranslate"><span class="pre">bluetoothctl</span></code> can be automated with <code class="docutils literal notranslate"><span class="pre">expect</span></code> (<a class="reference external" href="https://gist.github.com/RamonGilabert/046727b302b4d9fb0055">example gist</a> by RamonGilabert; <code class="docutils literal notranslate"><span class="pre">expect</span></code> is not installed by default) or plain old <code class="docutils literal notranslate"><span class="pre">echo</span></code> as can be seen <a class="reference external" href="https://bbs.archlinux.org/viewtopic.php?id=171144">on the Arch Linux forums</a></p>
+</aside>
+<aside class="footnote brackets" id="heretutorial" role="note">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id8">7</a><span class="fn-bracket">]</span></span>
+<p>“Here documents”, <a class="reference external" href="https://bash.cyberciti.biz/guide/Here_documents">nixCraft Linux Shell Scripting Tutorial</a>. Haven’t personally used this one, but looks beginner-friendly. Who needs a text editor anyway?</p>
+</aside>
+<aside class="footnote brackets" id="ytdl" role="note">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id9">8</a><span class="fn-bracket">]</span></span>
+<p><code class="docutils literal notranslate"><span class="pre">youtube-dl</span></code> is a powerful tool that can be used for both downloading and streaming media from a plethora of websites including <code class="docutils literal notranslate"><span class="pre">v.redd.it</span></code> and even TikTok! Other download methods and more information available at the <a class="reference external" href="https://ytdl-org.github.io/youtube-dl/">youtube-dl homepage</a>.</p>
+</aside>
+<aside class="footnote brackets" id="manmpv" role="note">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id10">9</a><span class="fn-bracket">]</span></span>
+<p>See <code class="docutils literal notranslate"><span class="pre">man</span> <span class="pre">mpv</span></code> for the installed version. The manual for the latest version is available online <a class="reference external" href="https://mpv.io/manual/master/">here</a>.</p>
+</aside>
+<aside class="footnote brackets" id="disapble" role="note">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id11">10</a><span class="fn-bracket">]</span></span>
+<p>“SAP error on bluetooth service status”, <a class="reference external" href="https://raspberrypi.stackexchange.com/a/99920">Raspberry Pi Stack Exchange</a>. SAP stands for “SIM Access Profile” and is used for, you guessed it, accessing SIM card data over Bluetooth.</p>
+</aside>
+<aside class="footnote brackets" id="pun" role="note">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id12">11</a><span class="fn-bracket">]</span></span>
+<p>While I tend to avoid reboots, I do approve of MCU Spidey in place of “Amazing” Spider-Man sequels.</p>
+</aside>
+</aside>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../index.html">
+    <img class="logo" src="../_static/logo.png" alt="Logo"/>
+    
+    <h1 class="logo logo-name">introt</h1>
+    
+  </a>
+</p>
+
+
+
+<p class="blurb">stop-gaps for documentation gaps</p>
+
+
+
+
+
+
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/raspberrypi/bluealsa.rst.txt"
+            rel="nofollow">Show Source</a></li><li><a href="https://github.com/introt/docs/issues">Report Issue</a></li>
+    </ul>
+   </div>
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Bluetooth audio on a headless Raspberry Pi using BlueAlsa</a><ul>
+<li><a class="reference internal" href="#intro">Intro</a></li>
+<li><a class="reference internal" href="#command-lines">Command lines</a><ul>
+<li><a class="reference internal" href="#adding-the-pi-user-to-the-bluetooth-group">Adding the ‘pi’ user to the ‘bluetooth’ group</a></li>
+<li><a class="reference internal" href="#installing-and-starting-the-bluealsa-daemon">Installing and starting the BlueAlsa daemon</a></li>
+<li><a class="reference internal" href="#connecting-a-bluetooth-device">Connecting a Bluetooth device</a><ul>
+<li><a class="reference internal" href="#using-bluetoothctl-interactively">Using bluetoothctl interactively</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#playing-audio">Playing audio</a><ul>
+<li><a class="reference internal" href="#example-of-streaming-audio-from-youtube-using-mpv">Example of streaming audio from YouTube using mpv</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#disabling-sap-optional">Disabling SAP (optional)</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#further-reading">Further reading</a></li>
+</ul>
+</li>
+</ul>
+
+  </div><h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../configs.html">Configurations</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../raspberrypi.html">Raspberry Pi</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Bluetooth audio on a headless Raspberry Pi using BlueAlsa</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../refs.html">References</a></li>
+</ul>
+
+
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2021-2022, introt. Text is available under <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      &amp; <a href="https://github.com/introt/alabester">Alabester 0.7.22</a>
+      
+      |
+      <a href="../_sources/raspberrypi/bluealsa.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
