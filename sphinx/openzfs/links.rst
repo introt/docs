@@ -21,6 +21,8 @@ Tutorials
 
 * `"Testing the self-healing of ZFS on Ubuntu 20.04" <https://ubuntu.com/tutorials/testing-the-self-healing-of-zfs-on-ubuntu#3-create-and-test-a-zfs-pool-with-a-striped-vdev>`_ on Ubuntu tutorials. Steps 3 & 4 include commands to create "fake disks" for testing purposes (spoilers: just ``dd`` a gig from ``/dev/zero``).
 
+* Restoring individual files from snapshots without rolling back. The answer lies in the ``.zfs/snapshot`` directory, located at the top level of each dataset. It's a really hidden virtual directory via which you have read-only access to that dataset's snapshots. You'll need to navigate to it manually. See `"Having access to previous user states" <https://didrocks.fr/2020/05/28/zfs-focus-on-ubuntu-20.04-lts-zsys-general-principle-on-state-management/>`_ for a small how-to, applicable to ZFS `in general <https://www.truenas.com/community/threads/dangerous-zfs-snapshot-directories.30828/>`_. There's also `this Reddit thread <https://old.reddit.com/r/zfs/comments/gc9c54/backuprestore_of_zfs_snapshots/>`_ in which u/DeHackEd describes their non-zfs backup setup.
+
 
 Command references
 ..................
